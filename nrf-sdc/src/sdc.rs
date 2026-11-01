@@ -1358,6 +1358,28 @@ mod le {
     sdc_cmd!(LeSetHostFeature => sdc_hci_cmd_le_set_host_feature(x));
     sdc_cmd!(LeSetHostFeatureV2 => sdc_hci_cmd_le_set_host_feature_v2(x));
     sdc_cmd!(async LeFrameSpaceUpdate => sdc_hci_cmd_le_frame_space_update(x));
+
+    /// Channel Sounding commands, available in the multirole controller on nRF54L.
+    #[cfg(all(feature = "central", feature = "peripheral", feature = "nrf54l"))]
+    mod channel_sounding {
+        use bt_hci::cmd::le::*;
+
+        use crate::raw;
+
+        sdc_cmd!(LeCsReadLocalSupportedCapabilities => sdc_hci_cmd_le_cs_read_local_supported_capabilities() -> y);
+        sdc_cmd!(async LeCsReadRemoteSupportedCapabilities => sdc_hci_cmd_le_cs_read_remote_supported_capabilities(x));
+        sdc_cmd!(LeCsWriteCachedRemoteSupportedCapabilities => sdc_hci_cmd_le_cs_write_cached_remote_supported_capabilities(x) -> y);
+        sdc_cmd!(async LeCsSecurityEnableCommand => sdc_hci_cmd_le_cs_security_enable(x));
+        sdc_cmd!(LeCsSetDefaultSettings => sdc_hci_cmd_le_cs_set_default_settings(x) -> y);
+        sdc_cmd!(async LeCsReadRemoteFaeTable => sdc_hci_cmd_le_cs_read_remote_fae_table(x));
+        sdc_cmd!(LeCsWriteCachedRemoteFaeTable => sdc_hci_cmd_le_cs_write_cached_remote_fae_table(x) -> y);
+        sdc_cmd!(async LeCsCreateConfig => sdc_hci_cmd_le_cs_create_config(x));
+        sdc_cmd!(async LeCsRemoveConfig => sdc_hci_cmd_le_cs_remove_config(x));
+        sdc_cmd!(LeCsSetChannelClassification => sdc_hci_cmd_le_cs_set_channel_classification(x));
+        sdc_cmd!(LeCsSetProcedureParams => sdc_hci_cmd_le_cs_set_procedure_params(x) -> y);
+        sdc_cmd!(async LeCsProcedureEnable => sdc_hci_cmd_le_cs_procedure_enable(x));
+        sdc_cmd!(async LeCsTestEnd => sdc_hci_cmd_le_cs_test_end());
+    }
     sdc_cmd!(LeConnectionRateRequest => sdc_hci_cmd_le_conn_rate_request(x));
     sdc_cmd!(LeSetDefaultRateParameters => sdc_hci_cmd_le_set_default_rate_params(x));
 
