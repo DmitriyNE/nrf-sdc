@@ -718,6 +718,45 @@ impl Builder {
         self.support(raw::sdc_support_channel_sounding_test)
     }
 
+    /// Sets the number of links that can use Channel Sounding at the same time.
+    #[cfg(all(feature = "central", feature = "peripheral", feature = "nrf54l"))]
+    pub fn cs_count(self, count: u8) -> Result<Self, Error> {
+        self.cfg_set(
+            raw::SDC_CFG_TYPE_CS_COUNT,
+            sdc_cfg_t {
+                cs_count: sdc_cfg_role_count_t { count },
+            },
+        )
+    }
+
+    /// Sets the Channel Sounding antenna configuration: the maximum number of antenna paths
+    /// (1 to 4) and the number of local antennas (1 to `max_antenna_paths_supported`).
+    ///
+    /// More than one antenna needs [`Builder::cs_antenna_switch_callback`].
+    #[cfg(all(feature = "central", feature = "peripheral", feature = "nrf54l"))]
+    pub fn cs_cfg(self, max_antenna_paths_supported: u8, num_antennas_supported: u8) -> Result<Self, Error> {
+        self.cfg_set(
+            raw::SDC_CFG_TYPE_CS_CFG,
+            sdc_cfg_t {
+                cs_cfg: raw::sdc_cfg_cs_cfg_t {
+                    max_antenna_paths_supported,
+                    num_antennas_supported,
+                },
+            },
+        )
+    }
+
+    /// Sets the function that switches antennas during Channel Sounding.
+    ///
+    /// The controller calls it with the antenna index, from 0 to `num_antennas_supported - 1`
+    /// (see [`Builder::cs_cfg`]). It runs in the controller's high-priority interrupt between
+    /// steps, so it must only set the switch (typically a few GPIO writes) and return.
+    #[cfg(all(feature = "central", feature = "peripheral", feature = "nrf54l"))]
+    pub fn cs_antenna_switch_callback(self, callback: extern "C" fn(antenna: u8)) -> Self {
+        unsafe { raw::sdc_cs_antenna_switch_callback_set(Some(callback)) };
+        self
+    }
+
     /// Support Connected Isochronous streams in the central role.
     #[cfg(all(feature = "central", feature = "peripheral"))]
     pub fn support_cis_central(self) -> Self {
