@@ -718,6 +718,45 @@ impl Builder {
         self.support(raw::sdc_support_channel_sounding_test)
     }
 
+    /// Sets the number of links that can use Channel Sounding at the same time.
+    #[cfg(all(feature = "central", feature = "peripheral", feature = "nrf54l"))]
+    pub fn cs_count(self, count: u8) -> Result<Self, Error> {
+        self.cfg_set(
+            raw::SDC_CFG_TYPE_CS_COUNT,
+            sdc_cfg_t {
+                cs_count: sdc_cfg_role_count_t { count },
+            },
+        )
+    }
+
+    /// Sets the Channel Sounding antenna configuration: the maximum number of antenna paths
+    /// (1 to 4) and the number of local antennas (1 to `max_antenna_paths_supported`).
+    ///
+    /// More than one antenna needs [`Builder::cs_antenna_switch_callback`].
+    #[cfg(all(feature = "central", feature = "peripheral", feature = "nrf54l"))]
+    pub fn cs_cfg(self, max_antenna_paths_supported: u8, num_antennas_supported: u8) -> Result<Self, Error> {
+        self.cfg_set(
+            raw::SDC_CFG_TYPE_CS_CFG,
+            sdc_cfg_t {
+                cs_cfg: raw::sdc_cfg_cs_cfg_t {
+                    max_antenna_paths_supported,
+                    num_antennas_supported,
+                },
+            },
+        )
+    }
+
+    /// Sets the function that switches antennas during Channel Sounding.
+    ///
+    /// The controller calls it with the antenna index, from 0 to `num_antennas_supported - 1`
+    /// (see [`Builder::cs_cfg`]). It runs in the controller's high-priority interrupt between
+    /// steps, so it must only set the switch (typically a few GPIO writes) and return.
+    #[cfg(all(feature = "central", feature = "peripheral", feature = "nrf54l"))]
+    pub fn cs_antenna_switch_callback(self, callback: extern "C" fn(antenna: u8)) -> Self {
+        unsafe { raw::sdc_cs_antenna_switch_callback_set(Some(callback)) };
+        self
+    }
+
     /// Support Connected Isochronous streams in the central role.
     #[cfg(all(feature = "central", feature = "peripheral"))]
     pub fn support_cis_central(self) -> Self {
@@ -1358,6 +1397,28 @@ mod le {
     sdc_cmd!(LeSetHostFeature => sdc_hci_cmd_le_set_host_feature(x));
     sdc_cmd!(LeSetHostFeatureV2 => sdc_hci_cmd_le_set_host_feature_v2(x));
     sdc_cmd!(async LeFrameSpaceUpdate => sdc_hci_cmd_le_frame_space_update(x));
+
+    /// Channel Sounding commands, available in the multirole controller on nRF54L.
+    #[cfg(all(feature = "central", feature = "peripheral", feature = "nrf54l"))]
+    mod channel_sounding {
+        use bt_hci::cmd::le::*;
+
+        use crate::raw;
+
+        sdc_cmd!(LeCsReadLocalSupportedCapabilities => sdc_hci_cmd_le_cs_read_local_supported_capabilities() -> y);
+        sdc_cmd!(async LeCsReadRemoteSupportedCapabilities => sdc_hci_cmd_le_cs_read_remote_supported_capabilities(x));
+        sdc_cmd!(LeCsWriteCachedRemoteSupportedCapabilities => sdc_hci_cmd_le_cs_write_cached_remote_supported_capabilities(x) -> y);
+        sdc_cmd!(async LeCsSecurityEnableCommand => sdc_hci_cmd_le_cs_security_enable(x));
+        sdc_cmd!(LeCsSetDefaultSettings => sdc_hci_cmd_le_cs_set_default_settings(x) -> y);
+        sdc_cmd!(async LeCsReadRemoteFaeTable => sdc_hci_cmd_le_cs_read_remote_fae_table(x));
+        sdc_cmd!(LeCsWriteCachedRemoteFaeTable => sdc_hci_cmd_le_cs_write_cached_remote_fae_table(x) -> y);
+        sdc_cmd!(async LeCsCreateConfig => sdc_hci_cmd_le_cs_create_config(x));
+        sdc_cmd!(async LeCsRemoveConfig => sdc_hci_cmd_le_cs_remove_config(x));
+        sdc_cmd!(LeCsSetChannelClassification => sdc_hci_cmd_le_cs_set_channel_classification(x));
+        sdc_cmd!(LeCsSetProcedureParams => sdc_hci_cmd_le_cs_set_procedure_params(x) -> y);
+        sdc_cmd!(async LeCsProcedureEnable => sdc_hci_cmd_le_cs_procedure_enable(x));
+        sdc_cmd!(async LeCsTestEnd => sdc_hci_cmd_le_cs_test_end());
+    }
     sdc_cmd!(LeConnectionRateRequest => sdc_hci_cmd_le_conn_rate_request(x));
     sdc_cmd!(LeSetDefaultRateParameters => sdc_hci_cmd_le_set_default_rate_params(x));
 
