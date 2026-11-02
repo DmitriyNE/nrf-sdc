@@ -281,18 +281,38 @@ unsafe extern "C" fn assert_handler(file: *const core::ffi::c_char, line: u32) {
     )
 }
 
+/// The RRAM low-power configuration to restore on release, saved by the first acquire. MPSL may
+/// call acquire again before releasing (mpsl.h), so later acquires must not overwrite it.
+#[cfg(feature = "_nrf54l")]
+static RRAM_LOWPOWER: core::sync::atomic::AtomicU32 = core::sync::atomic::AtomicU32::new(0);
+#[cfg(feature = "_nrf54l")]
+static LOW_LATENCY: core::sync::atomic::AtomicBool = core::sync::atomic::AtomicBool::new(false);
+
 #[cfg(feature = "_nrf54l")]
 #[no_mangle]
 unsafe extern "C" fn mpsl_low_latency_acquire_callback() {
+    use core::sync::atomic::Ordering;
     let p = embassy_nrf::pac::POWER;
     p.tasks_constlat().write_value(1);
+    // As NCS does: keep the RRAM in standby rather than power-down while MPSL needs low latency,
+    // so code fetches don't stall in time-critical radio work.
+    let lp = embassy_nrf::pac::RRAMC.power().lowpowerconfig();
+    if !LOW_LATENCY.swap(true, Ordering::Relaxed) {
+        RRAM_LOWPOWER.store(lp.read().0, Ordering::Relaxed);
+    }
+    lp.write(|w| w.set_mode(embassy_nrf::pac::rramc::vals::Mode::Standby));
 }
 
 #[cfg(feature = "_nrf54l")]
 #[no_mangle]
 unsafe extern "C" fn mpsl_low_latency_release_callback() {
+    use core::sync::atomic::Ordering;
     let p = embassy_nrf::pac::POWER;
     p.tasks_lowpwr().write_value(1);
+    if LOW_LATENCY.swap(false, Ordering::Relaxed) {
+        let saved = RRAM_LOWPOWER.load(Ordering::Relaxed);
+        embassy_nrf::pac::RRAMC.power().lowpowerconfig().write(|w| w.0 = saved);
+    }
 }
 
 impl Drop for MultiprotocolServiceLayer<'_> {
