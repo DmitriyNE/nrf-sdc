@@ -9,6 +9,30 @@ Changelog
 
 All the notable changes to this project are documented on this page.
 
+nRF Connect SDK v3.4.1
+**********************
+
+Changes
+=======
+
+* Updated the validation criteria for the procedure interval when receiving an ``LL_CS_REQ`` PDU during the Channel Sounding Start procedure.
+  This change improves interoperability with other controllers. (DRGN-28833)
+
+Bug fixes
+=========
+
+* Fixed a rare issue where the controller could assert when an ACL connection was terminated or lost while a CIS connection was active.
+  This would only occur when ``NSE > 1`` and high CPU load delayed fetching the disconnection complete event for the CIS. (DRGN-29446)
+* Fixed an issue where a peripheral connection could drop when using peripheral latency and a supervision timer that allowed a few chances to receive when peripheral latency was applied. (DRGN-21703)
+* Fixed an issue where a connection could be lost when the peripheral received a Connection Subrate Update indication that increased peripheral latency and supervision timeout.
+  The peripheral could apply the new latency before the central had received the peripheral's acknowledgment, causing the peripheral to skip connection events and exceed the supervision timeout. (DRGN-29270)
+* Fixed an issue where the controller would not use a random delay for undirected advertisements when a high duty cycle advertiser had previously been started on the same advertising set. (DRGN-29306)
+* Fixed an issue where the controller could have a higher than expected packet loss rate as a BIS synchronized receiver in noisy environments. (DRGN-29320)
+* Fixed an issue where the controller could assert while running DTM RX tests on very noisy links. (DRGN-29228)
+* Fixed an issue where the controller, acting as a CS Reflector, would shift the CS tone phase incorrectly when IPT feature was used with multiple antenna paths. (DRGN-29459)
+* Fixed an issue where the controller could assert when an ACL connection with active CS procedures was disconnected.
+  This could occur when CS events were in a scheduling conflict with other activities. (DRGN-29669)
+
 nRF Connect SDK v3.4.0
 **********************
 
